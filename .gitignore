@@ -5,3 +5,7 @@
 *.pyc
 venv/
 pyvenv.cfg
+.venv
+yogya-registry.sh
+requirements.txt
+intepreter-sync.sh

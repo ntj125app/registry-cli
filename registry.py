@@ -85,7 +85,6 @@ class Requests:
                 print('[debug][auth][answer] Auth header:')
                 pprint.pprint(oauth['bearer'])
 
-            # print('[info] retreiving bearer token for {0}'.format(oauth['bearer']['scope']))
             request_url = '{0}'.format(oauth['bearer']['realm'])
             query_separator = '?'
             if 'service' in oauth['bearer']:
@@ -133,7 +132,7 @@ def natural_keys(text):
     def __atoi(text):
         return int(text) if text.isdigit() else text
 
-    return [__atoi(c) for c in re.split('(\d+)', text)]
+    return [__atoi(c) for c in re.split(r'(\d+)', text)]
 
 
 def decode_base64(data):
@@ -144,7 +143,6 @@ def decode_base64(data):
 
     """
     data = data.replace('Bearer ','')
-    # print('[debug] base64 string to decode:\n{0}'.format(data))
     missing_padding = len(data) % 4
     if missing_padding != 0:
         data += b'='* (4 - missing_padding)
@@ -251,20 +249,16 @@ class Registry:
                     else (self.username, self.password)),
                 verify=not self.no_validate_ssl)
 
-        # except Exception as error:
-        #     print("cannot connect to {0}\nerror {1}".format(
-        #         self.hostname,
-        #         error))
-        #     sys.exit(1)
         if str(result.status_code)[0] == '2':
             self.last_error = None
             return result
 
         self.last_error = result.status_code
+        print("Request status: {0} {1}".format(result.status_code, result.reason))
         return None
 
     def list_images(self):
-        result = self.send('/v2/_catalog?n=10000')
+        result = self.send('/v2/_catalog')
         if result is None:
             return []
 
@@ -285,13 +279,6 @@ class Registry:
             tags_list.sort(key=natural_keys)
 
         return tags_list
-
-    # def list_tags_like(self, tag_like, args_tags_like):
-    #     for tag_like in args_tags_like:
-    #         print("tag like: {0}".format(tag_like))
-    #         for tag in all_tags_list:
-    #             if re.search(tag_like, tag):
-    #                 print("Adding {0} to tags list".format(tag))
 
     def get_tag_digest(self, image_name, tag):
         image_headers = self.send("/v2/{0}/manifests/{1}".format(
@@ -607,7 +594,7 @@ def delete_tags(
 # registry.delete_tag_layer(image_name, layer_digest, dry_run)
 
 
-def get_tags_like(args_tags_like, tags_list, plain):
+def get_tags_like(args_tags_like, tags_list, plain=False):
     result = set()
     for tag_like in args_tags_like:
         if not plain:
@@ -775,6 +762,11 @@ def main_loop(args):
 
     registry = Registry.create(args.host, args.login, args.no_validate_ssl,
                                args.digest_method)
+
+    print("Registry: {0}".format(registry.hostname))
+    print("Username: {0}".format(registry.username))
+    print("SSL: {0}".format(registry.no_validate_ssl))
+    print("Digest method: {0}".format(registry.digest_method))
 
     registry.auth_schemes = get_auth_schemes(registry,'/v2/_catalog')
 
